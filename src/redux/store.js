@@ -1,11 +1,12 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import contactsInitial from '../components/phonebookAddingForm/contacts.json';
 import { createReducer } from '@reduxjs/toolkit';
 import { addContact, deliteContact, onFilterChange } from '../redux/actions';
-import storage from 'redux-persist/lib/storage';
+import { fetchContacts } from '../redux/contactsOperations';
+// import storage from 'redux-persist/lib/storage';
 import {
-  persistReducer,
-  persistStore,
+  // persistReducer,
+  // persistStore,
   FLUSH,
   REHYDRATE,
   PAUSE,
@@ -50,16 +51,39 @@ const reducer = createReducer(initialState, {
   },
 });
 
-const persistConfig = {
-  key: 'counter',
-  storage,
-  whitelist: ['contacts'],
-};
+const contactsFromServer = createReducer([], {
+  [fetchContacts.fulfilled]: (_, action) => action.payload,
+});
 
-const persistedReducer = persistReducer(persistConfig, reducer);
+const contactsLoading = createReducer(false, {
+  [fetchContacts.pending]: () => true,
+  [fetchContacts.fulfilled]: () => false,
+  [fetchContacts.rejected]: () => false,
+});
+
+const contactsLoadingError = createReducer(false, {
+  [fetchContacts.pending]: (_, action) => action.payload,
+  [fetchContacts.fulfilled]: () => false,
+  [fetchContacts.rejected]: () => false,
+});
+
+// const persistConfig = {
+//   key: 'counter',
+//   storage,
+//   whitelist: ['contacts'],
+// };
+
+// const persistedReducer = persistReducer(persistConfig, reducer);
+
+const rootReducer = combineReducers({
+  contacts: reducer,
+  contactsFromServer,
+  contactsLoading,
+  contactsLoadingError,
+});
 
 const store = configureStore({
-  reducer: persistedReducer,
+  reducer: rootReducer,
   devTools: process.env.NODE_ENV !== 'production',
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -68,6 +92,6 @@ const store = configureStore({
       },
     }),
 });
-export const persistor = persistStore(store);
+// export const persistor = persistStore(store);
 
 export default store;
